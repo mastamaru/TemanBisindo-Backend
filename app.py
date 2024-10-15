@@ -1,11 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_pymongo import PyMongo
 from dotenv import load_dotenv
 import os
 from azure.storage.blob import BlobServiceClient
-from bson import ObjectId
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
 from flask_cors import CORS
 
 
