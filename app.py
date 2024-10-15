@@ -10,9 +10,10 @@ from flask_cors import CORS
 
 
 load_dotenv(dotenv_path='.env')
-kamus_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+kamus_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'halo', 'saya', 'selamat']
 # buat kategori gestur yaitu angka atau huruf dengan memanfaatkan lambda yang memanfaatkan kamus_list assign 2 nilai bro "angka" atau "huruf" tergantung dari nilai yang ada di kamus_list
-kategori_gestur = {k: "Angka" if k.isdigit() else "Huruf" for k in kamus_list}
+kategori_gestur = {k: "Angka" if k.isdigit() else "Kata" if len(k) > 1 else "Huruf" for k in kamus_list}
+
 
 uri = os.environ.get('URI')
 
@@ -103,11 +104,13 @@ def add_all_gestur():
             # Iterasi jika folder tidak kosong
             for file_name in os.listdir(folder_path):
                 app.logger.info(f"Memproses file {file_name}")
-                if file_name.lower().endswith(('.mp4', '.avi', '.mov')):  # Sesuaikan dengan format video yang kamu gunakan
+                if file_name.lower().endswith(('.mp4', '.avi')):  # Sesuaikan dengan format video yang kamu gunakan
                     file_path = os.path.join(folder_path, file_name)
                     result_id = upload_to_azure_and_mongodb(file_path, terjemahan)
                     if result_id:
                         results.append({"terjemahan": terjemahan, "id": result_id, "Category": kategori_gestur[terjemahan]})
+                else:
+                    app.logger.warning(f"File {file_name} tidak didukung, melewati.")
         else:
             app.logger.warning(f"Folder untuk {terjemahan} tidak ditemukan")
 
@@ -155,5 +158,20 @@ def delete_all_gestur():
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+
+@app.route('/test_gestur', methods=['GET'])
+#return a div with the video
+def test_gestur():
+    terjemahan = request.args.get('terjemahan')
+    if not terjemahan:
+        return jsonify({"error": "Parameter 'terjemahan' diperlukan"}), 400
+
+    try:
+        gestur = collection.find_one({"Terjemahan": terjemahan})
+        if gestur:
+            return f'<video width="320" height="240" controls><source src="{gestur["Link_Video"]}" type="video/mp4"></video>'
+        else:
+            return jsonify({"error": "Gestur tidak ditemukan"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
